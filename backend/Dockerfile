@@ -1,43 +1,48 @@
-# --- ÉTAPE 1 : Construction (Build) ---
+# Build stage
 FROM node:20-alpine AS builder
 
-# Définir le répertoire de travail
 WORKDIR /app
 
-# Copier les fichiers de dépendances
-# On copie package.json ET package-lock.json (ou yarn.lock)
 COPY package*.json ./
 
-# Installer toutes les dépendances (y compris devDependencies pour TS)
-RUN npm install
+# Essayer npm ci d'abord (plus strict), fallback sur npm install
+RUN npm ci || npm install --omit=dev
 
-# Copier le reste du code source
 COPY . .
 
-# Compiler le TypeScript (si applicable)
-# Assurez-vous d'avoir un script "build" dans votre package.json
-RUN npm run build
+# Génère le client Prisma
+RUN npx prisma generate
 
-# --- ÉTAPE 2 : Exécution (Run) ---
+# Production stage
 FROM node:20-alpine
+
+RUN apk add --no-cache openssl
 
 WORKDIR /app
 
-# Définir l'environnement en production
-ENV NODE_ENV=production
+# Installer dumb-init pour gérer les signaux correctement
+RUN apk add --no-cache dumb-init
 
-# Copier uniquement les fichiers nécessaires de l'étape builder
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/dist ./dist
+COPY package*.json ./
 
-# Installer uniquement les dépendances de production
-RUN npm ci --only=production
+# Essayer npm ci d'abord, fallback sur npm install
+RUN npm ci --omit=dev || npm install --omit=dev
 
-# Exposer le port sur lequel votre app écoute (ex: 3000)
-EXPOSE 3001
+# Copier Prisma (pour les migrations et client)
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/prisma ./prisma
 
-# Utiliser l'utilisateur 'node' (fourni par l'image alpine) pour plus de sécurité
-USER node
+COPY . .
 
-# Commande pour démarrer l'application
-CMD ["node", "dist/index.js"]
+# Non-root user pour sécurité
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodejs -u 1001
+USER nodejs
+
+EXPOSE 5000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:5000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "src/server.js"]

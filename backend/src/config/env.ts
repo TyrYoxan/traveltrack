@@ -1,90 +1,120 @@
 import fs from 'fs';
 import dotenv from 'dotenv';
-import schema from './env.schema.js';
+import {schema, EnvSchema} from './env.schema';
 
-/**
- *
- * @type {{}}
- */
-const config = {};
+interface ParsedEnv {
+    [key: string]: string | number;
+}
+
+// ===== MAIN =====
+const config: ParsedEnv = {};
+const errors: string[] = [];
 
 try {
-    const content = dotenv.parse(fs.readFileSync('../.env', 'utf8'));
-    const errors = [];
+    const envContent = fs.readFileSync('.env', 'utf8');
+    const envParsed = dotenv.parse(envContent);
 
-
+    // Valider chaque clé du schéma
     for (const key of Object.keys(schema)) {
-        errors.push(validate_env(key, content, config));
+        const error = validateEnvVariable(key, envParsed, config);
+        if (error) errors.push(error);
     }
 
     displayValidationReport(errors);
 
-}catch(err) {
-    console.error(err);
+    // Bloquer le démarrage si erreurs
+    if (errors.length > 0) {
+        process.exit(1);
+    }
+
+} catch (err) {
+    if (err instanceof Error) {
+        console.error('❌ Erreur lors de la lecture du fichier .env:', err.message);
+    }
+    process.exit(1);
 }
 
 export default config;
 
-function displayValidationReport(nestedErrors) {
-    // 1. Aplatir le tableau et supprimer les lignes vides
-    const allErrors = nestedErrors.flat();
+// ===== FUNCTIONS =====
 
-    console.log("\n" + "=".repeat(50));
-    console.log("📊 .ENV FILE VALIDATION REPORT");
-    console.log("=".repeat(50));
+function validateEnvVariable(
+    key: string,
+    envParsed: { [key: string]: string },
+    config: ParsedEnv
+): string | null {
+    const schemaKey = schema[key];
 
-    if (allErrors.length === 0) {
-        console.log(" ✅ Valid configuration: No errors detected.");
+
+    if (!(key in envParsed)) {
+        // Si obligatoire et pas de valeur par défaut → erreur
+        if (schemaKey.obligation && !schemaKey.default) {
+            return `${key} : Valeur obligatoire manquante`;
+        }
+        // Sinon, utiliser la valeur par défaut
+        if (schemaKey.default !== undefined) {
+            config[key] = schemaKey.default;
+            return null;
+        }
+        return null;
+    }
+
+    const value = envParsed[key].trim();
+
+
+    if (value.length === 0) {
+        if (schemaKey.obligation) {
+            return `${key} : Valeur vide non autorisée`;
+        }
+        if (schemaKey.default !== undefined) {
+            config[key] = schemaKey.default;
+            return null;
+        }
+        return null;
+    }
+
+
+    const typeError = validateType(key, value, schemaKey);
+    if (typeError) return typeError;
+
+
+    config[key] = schemaKey.type === 'number' ? parseInt(value, 10) : value;
+    return null;
+}
+
+function validateType(key: string, value: string, schema: EnvSchema[string]): string | null {
+    if (schema.type === 'number') {
+        if (isNaN(Number(value))) {
+            return `${key} : Doit être un nombre, reçu "${value}"`;
+        }
+        const num = parseInt(value, 10);
+        if (num < 0) {
+            return `${key} : Doit être positif, reçu ${num}`;
+        }
+    }
+
+    if (schema.type === 'enum') {
+        if (!schema.values?.includes(value)) {
+            return `${key} : Valeur invalide. Accepté: ${schema.values?.join(', ')}`;
+        }
+    }
+
+    return null;
+}
+
+function displayValidationReport(errors: string[]): void {
+    console.log('\n' + '='.repeat(60));
+    console.log('📊 ENV FILE VALIDATION REPORT');
+    console.log('='.repeat(60));
+
+    if (errors.length === 0) {
+        console.log('✅ Configuration valide - Aucune erreur détectée.');
     } else {
-        console.log(` ❌ ${allErrors.length} error(s) detected: \n`);
-
-        // 2. Affichage formaté avec une puce
-        allErrors.forEach((error, index) => {
-            // Optionnel : Colorer la clé pour plus de visibilité
-            const [key, message] = error.split(' : ');
-            console.log(`${String(index + 1).padStart(2, ' ')}. [${key}] ➔ ${message}`);
+        console.log(`❌ ${errors.length} erreur(s) détectée(s):\n`);
+        errors.forEach((error, index) => {
+            console.log(`   ${String(index + 1).padStart(2, ' ')}. ${error}`);
         });
     }
 
-    console.log("=".repeat(50) + "\n");
-}
-
-function validate_env(key, value, config) {
-    const errors = [];
-
-    if (value[key] === undefined) {
-        if (schema[key].default){
-            errors.push(`${key}: is missing !!!`);
-        }
-        return errors;
-    }else {
-        if (value[key].length === 0){
-            config[key] = schema[key].default;
-            return errors;
-        }
-    }
-
-    if (schema[key].obligation) {
-        if (value[key].length === 0) {
-            errors.push(`${key} : Value is obligated`);
-        }
-    }
-
-    if (schema[key].type === 'number') {
-        if (isNaN(value[key])) {
-            errors.push(`${key} : Need to be a number`);
-        }else{
-            if (parseInt(value[key]) < 0) {
-                errors.push(`${key} : Need to be positif`);
-            }
-        }
-
-    }else if (schema[key].type === 'enum') {
-        if (!schema[key].values.includes(value[key])) {
-            errors.push(`${key} : String need to be ${schema[key].values}`);
-        }
-    }
-
-    config[key] = isNaN(value[key])? value[key]: parseInt(value[key]);
-    return errors;
+    console.log('='.repeat(60) + '\n');
 }
