@@ -1,5 +1,5 @@
 const { Pool } = require('pg');
-const config = require("../../config/env");
+const config = require("../config/env.js");
 
 
 const client = new Pool({connectionString: config.DATABASE_TYPE+config.DATABASE_PASS+'@'+config.DATABASE_USER+':'+
@@ -7,7 +7,7 @@ const client = new Pool({connectionString: config.DATABASE_TYPE+config.DATABASE_
 
 async function createToken(userId, token, expiresAt){
     try {
-        const query = 'insert into refresh_token (user_id, token, date_expiration) values ($1,$2,$3) returning *';
+        const query = 'insert into refresh_token ("userId", "token", "expiresAt") values ($1,$2,$3) returning *';
 
         const response = await client.query(query, [userId, token, expiresAt]);
 
@@ -23,7 +23,7 @@ async function createToken(userId, token, expiresAt){
 
 async function findByToken(token){
     try{
-        const query = 'select * from refresh_token where token = $1';
+        const query = 'select * from refresh_token where "token" = $1';
 
         const response = await client.query(query, [token]);
         if (!response.rows) {
@@ -38,7 +38,7 @@ async function findByToken(token){
 
 async function revokedToken(token){
     try {
-        const query = 'update refresh_token set status = \'revoked\' where token = $1';
+        const query = 'update refresh_token set status = \'revoked\' where "token" = $1';
 
         const response = await client.query(query, [token]);
         if (response.rowCount === 0){
@@ -53,7 +53,7 @@ async function revokedToken(token){
 
 async function revokeAllUserTokens(userId){
     try{
-        const query = 'update refresh_token set status = \'revoked\' where user_id = $1';
+        const query = 'update refresh_token set status = \'revoked\' where "userId" = $1';
 
         const response = await client.query(query, [userId]);
         if (response.rowCount === 0){

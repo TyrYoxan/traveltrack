@@ -1,14 +1,6 @@
 // ===== TYPES =====
-export interface EnvSchema {
-    [key: string]: {
-        type: 'string' | 'number' | 'enum';
-        obligation: boolean;
-        default?: string | number;
-        values?: string[]; // Pour les enums
-    };
-}
 
-export const schema: EnvSchema = {
+const schema = {
     // --- Serveur ---
     PORT:{
         obligation: false,
@@ -70,3 +62,5 @@ export const schema: EnvSchema = {
         type: 'number'
     }
 };
+
+module.exports = schema;

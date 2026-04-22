@@ -5,7 +5,7 @@
  */
 
 const { Pool } = require('pg');
-const config = require("../../config/env");
+const config = require("../config/env.js");
 
 
 const client = new Pool({connectionString: config.DATABASE_TYPE+config.DATABASE_PASS+'@'+config.DATABASE_USER+':'+
@@ -21,7 +21,7 @@ async function createUser(user){
             return 'Invalid email or password';
         }
 
-        return 'Successfully logged in';
+        return response.rows;
     }catch(err){
         return err.message;
     }

@@ -1,6 +1,6 @@
 const userModel = require('../model/user.model.js');
 const refreshTokenModel = require('../model/refreshToken.model.js');
-const config = require('../../config/env');
+const config = require('../config/env.js');
 const bcrypt = require("bcrypt");
 const z = require("zod");
 const jwt = require("jsonwebtoken");
@@ -45,7 +45,12 @@ async function register(user){
         user = userCreateParse.parse(user)
         user.password = await bcrypt.hash(user.password, 12);
 
-        return await userModel.createUser(user);
+        const use = await userModel.createUser(user);
+        const token = await generateToken(user);
+        return {
+            token: token.access,
+            user: user
+        };
 
     }catch(err){
         throw err;

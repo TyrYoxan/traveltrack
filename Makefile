@@ -45,7 +45,7 @@ migrate:
 	docker compose exec backend npx prisma migrate deploy
 
 seed:
-	docker compose exec backend npx prisma db seed
+	docker compose exec backend npm run prisma:seed
 
 migrate-reset:
 	docker compose exec backend npx prisma migrate reset
