@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
@@ -11,54 +8,90 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================
+// USER
+// ============================================
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  firstName String?
-  lastName  String?
+  id    String @id @default(cuid())
+  name  String // ← Ajouté!
+  email String @unique
+
+  password String
+  role     String @default("viewer")
+  status   String @default("active")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  itineraries Itinerary[]
+  itineraries   Itinerary[]
+  refreshTokens RefreshToken[]
 
   @@map("users")
 }
 
-model Itinerary {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  startDate   DateTime
-  endDate     DateTime
-  shareToken  String   @unique @default(cuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// ============================================
+// REFRESH TOKEN
+// ============================================
+model RefreshToken {
+  id String @id @default(cuid())
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  token  String @unique
+  status String @default("active")
+
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_token")
+}
+
+// ============================================
+// ITINERARY
+// ============================================
+model Itinerary {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  shareToken  String   @unique @map("share_token")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   legs Leg[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([userId])
   @@index([shareToken])
   @@map("itineraries")
 }
 
+// ============================================
+// LEG
+// ============================================
 model Leg {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   title       String
   description String?
   latitude    Float
   longitude   Float
-  duration    Int? // en minutes
+  duration    Int? // En minutes, optionnel
   order       Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 
-  itineraryId String
+  itineraryId String    @map("itinerary_id")
   itinerary   Itinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
 
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Unique: une itinéraire ne peut pas avoir 2 étapes avec le même order
   @@unique([itineraryId, order])
   @@index([itineraryId])
   @@map("legs")
