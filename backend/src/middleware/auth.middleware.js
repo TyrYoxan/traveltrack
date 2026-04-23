@@ -1,5 +1,5 @@
 const apiResponse = require('../../utils/apiResponse.js');
-const config = require('../../config/env.ts');
+const config = require('../config/env.js');
 const jwt = require('jsonwebtoken');
 
 

@@ -1,23 +1,20 @@
-const { Pool } = require('pg');
-const config = require("../config/env.js");
-
-
-const client = new Pool({connectionString: config.DATABASE_TYPE+config.DATABASE_PASS+'@'+config.DATABASE_USER+':'+
-        config.DATA_PORT+'/'+config.DATABASE_NAME});
+import pool from '../config/database.js';
+import logger from '../../utils/logger.js';
 
 async function createToken(userId, token, expiresAt){
     try {
         const query = 'insert into refresh_token ("userId", "token", "expiresAt") values ($1,$2,$3) returning *';
 
-        const response = await client.query(query, [userId, token, expiresAt]);
+        const response = await pool.query(query, [userId, token, expiresAt]);
 
         if (response.rowCount !== 1) {
-            throw new Error('Error creating refresh token');
+            logger.error('Error creating refresh token');
+
+            return 'Error creating refresh token';
         }
 
-
     }catch(err){
-        throw new Error(err.message);
+        return err;
     }
 }
 
@@ -25,7 +22,7 @@ async function findByToken(token){
     try{
         const query = 'select * from refresh_token where "token" = $1';
 
-        const response = await client.query(query, [token]);
+        const response = await pool.query(query, [token]);
         if (!response.rows) {
             throw new Error('Error finding refresh token');
         }
@@ -40,7 +37,7 @@ async function revokedToken(token){
     try {
         const query = 'update refresh_token set status = \'revoked\' where "token" = $1';
 
-        const response = await client.query(query, [token]);
+        const response = await pool.query(query, [token]);
         if (response.rowCount === 0){
             return 'Error finding refresh token';
         }
@@ -55,7 +52,7 @@ async function revokeAllUserTokens(userId){
     try{
         const query = 'update refresh_token set status = \'revoked\' where "userId" = $1';
 
-        const response = await client.query(query, [userId]);
+        const response = await pool.query(query, [userId]);
         if (response.rowCount === 0){
             return 'Error finding userId';
         }
@@ -65,4 +62,4 @@ async function revokeAllUserTokens(userId){
     }
 }
 
-module.exports = {createToken, revokeAllUserTokens, findByToken, revokedToken};
+export default {createToken, revokeAllUserTokens, findByToken, revokedToken};

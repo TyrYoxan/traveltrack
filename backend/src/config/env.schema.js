@@ -26,6 +26,10 @@ const schema = {
     },
 
     // --- Base de donnée ---
+    DATABASE_URL:{
+        obligation: true,
+        type: 'string'
+    },
     DATABASE_TYPE:{
         obligation: true,
         type: 'string'
@@ -63,4 +67,4 @@ const schema = {
     }
 };
 
-module.exports = schema;
+export default schema;

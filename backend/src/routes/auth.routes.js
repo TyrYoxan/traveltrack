@@ -1,22 +1,12 @@
-const apiResponses = require('../../utils/apiResponse.js');
-const logger = require('../../utils/logger.js');
+import express from 'express';
+
+const router = express.Router();
+
+import authController from '../controllers/auth.controller.js';
 
 
+router.post('/auth/login', authController.login);
+router.post('/auth/logout', authController.logout)
+router.post('/auth/signup', authController.register)
 
-async function login(req, res, client) {
-    if (!req.body.email || !req.body.password) {
-        return apiResponses.error(422, 'Incomplete information' ,'Email and password is required');
-    }
-
-    const email = req.body.email;
-    const password = req.body.password;
-
-    try{
-
-
-        return apiResponses.success(200, null, 'Successfully logged in');
-    }catch(err){
-        return apiResponses.error(500, 'Error with data base', err.message);
-    }
-
-}
+export default router;

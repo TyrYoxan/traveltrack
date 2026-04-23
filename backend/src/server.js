@@ -2,26 +2,24 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
-import config from './config/env.ts';
+import config from './config/env.js';
+import authRoutes from './routes/auth.routes.js';
 
 // Initialize Express app
 const app = express();
-export const prisma = new PrismaClient();
 
 // Middleware
 app.use(helmet());
 app.use(compression());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5000',
   credentials: true,
 }));
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({extended: true}));
 
 // Logging middleware
-if (process.env.NODE_ENV !== 'test') {
+if (config.NODE_ENV !== 'test') {
   app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
     next();
@@ -29,14 +27,15 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // Health check endpoint
+/**
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
+    environment: config.NODE_ENV || 'development',
   });
-});
+});**/
 
 // API Routes
 app.get('/api', (req, res) => {
@@ -51,11 +50,8 @@ app.get('/api', (req, res) => {
   });
 });
 
-// TODO: Import and use route files
-// import authRoutes from './routes/auth.js';
-// import itineraryRoutes from './routes/itineraries.js';
-// app.use('/api/auth', authRoutes);
-// app.use('/api/itineraries', itineraryRoutes);
+app.use('/api', authRoutes);
+//app.use('/api', authRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -70,6 +66,7 @@ app.use((req, res) => {
 });
 
 // Error handler
+/**
 app.use((err, req, res, next) => {
   console.error('❌ Error:', err.message);
   console.error(err.stack);
@@ -77,8 +74,10 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({
     error: err.message || 'Internal Server Error',
     timestamp: new Date().toISOString(),
-    ...(config.NODE_ENV === 'development' && { stack: err.stack }),
+    ...(config.NODE_ENV === 'development' && {stack: err.stack}),
   });
-});
+});**/
+
+app.listen(5000, () => console.log('Server running'));
 
 export default app;

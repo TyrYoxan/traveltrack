@@ -1,5 +1,5 @@
-const {config} = require("../config/env");
-const env = config.NODE_ENV;
+import config from "../src/config/env.js";
+
 
 /**
  * Simple script to send styled messages to the terminal
@@ -40,10 +40,11 @@ function choseColor(level){
 }
 
 function centrale (msg, level, context){
+    const env = config.NODE_ENV;
     if (env === "development" || env === "test") {
         const color = choseColor(level);
         const timestamp = new Date().toISOString();
-        console.log(`${styles.reset}[${timestamp}] ${styles.bright}${color}${level} : ${msg} ${context? '\n'+context : ''}`);
+        console.log(`${styles.reset}[${timestamp}] ${styles.bright}${color}${level} : ${msg} ${context? '\n'+JSON.stringify(context, null, 2) : ''}`);
     }else if (env === "production") {
         if (level === "debug") {
             return;
@@ -81,4 +82,4 @@ function fatal(msg, context) {
     centrale(msg, 'fatal', context);
 }
 
-module.exports = {debug, info, warn, error, fatal};
+export default {debug, info, warn, error, fatal};

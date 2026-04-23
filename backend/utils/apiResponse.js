@@ -1,6 +1,3 @@
-//exemple response: { succes: true; status: 200; desc: "c'est un exemple"; body: [..]; }
-export { success, error }
-
 /** Retourne une reponse correct
  *
  * @param res
@@ -9,8 +6,8 @@ export { success, error }
  * @param {string}description
  * @returns {{success: boolean, status: *, desc: *, body: string}}
  */
-function success(res, status, data, description){
-    return res.status(status).json( {
+function succes(res, status, data, description){
+    return res.json( {
         success: true,
         status: status || 200,
         desc: description || "",
@@ -24,15 +21,17 @@ function success(res, status, data, description){
  * @param res
  * @param {number}status
  * @param {string}description
- * @param {Object}erreur
+ * @param {Object}err
  * @returns {{success: boolean, status, desc, body: null, errors: *}}
  */
-function error(res, status, description, erreur){
-    return res.status(status).json( {
+function erreur(res, status, description, err){
+    return res.json( {
         success: false,
-        status: status || 404,
+        status: status || 200,
         desc: description || "",
         body: null,
-        errors: erreur || null,
+        errors: err || null,
     });
 }
+
+export default {succes, erreur};

@@ -1,14 +1,17 @@
-const fs = require('fs');
-const dotenv = require('dotenv');
-const schema = require('./env.schema.js');
+import fs from 'fs';
+import dotenv from 'dotenv';
+import path from 'path';
+import schema from './env.schema.js';
+import logger from '../../utils/logger.js';
 
 // ===== MAIN =====
 const config = {};
 const errors = [];
 
 try {
-  const envContent = fs.readFileSync('./.env', 'utf8');
+  const envContent = fs.readFileSync(path.join(process.cwd(), '.env'), 'utf8');
   const envParsed = dotenv.parse(envContent);
+
 
   // Valider chaque clé du schéma
   for (const key of Object.keys(schema)) {
@@ -29,8 +32,6 @@ try {
   }
   process.exit(1);
 }
-
-module.exports = config;
 
 // ===== FUNCTIONS =====
 
@@ -106,3 +107,5 @@ function displayValidationReport(errors) {
 
   console.log('='.repeat(60) + '\n');
 }
+//console.log(JSON.stringify(config, null, 2));
+export default config;
