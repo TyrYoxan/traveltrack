@@ -10,8 +10,9 @@ async function login(req, res) {
   try{
     const connexion = await authService.login(req.body);
 
-    return apiResponses.succes(res,200, connexion, 'Successfully logged in');
+    return apiResponses.succes(res, 200, connexion, 'Successfully logged in');
   }catch(err){
+
     return apiResponses.erreur(res,500, 'Error with data base', err.message);
   }
 
@@ -24,9 +25,10 @@ async function register(req, res) {
 
   try{
     const connexion = await authService.register(req.body);
-    return apiResponses.ok(res,200, connexion, 'Successfully logged in');
+    return apiResponses.succes(res,200, connexion, 'Successfully logged in');
   }catch(err){
-    return res.status(500, 'Error with data base', err.message);
+    logger.error(err.message);
+    return apiResponses.erreur(res,500, 'Error with data base', err.message);
   }
 
 }
